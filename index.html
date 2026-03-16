@@ -10,7 +10,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
   <style>
-    /* All your existing styles remain exactly the same */
+    /* All your existing styles remain exactly the same - KEEP YOUR EXISTING STYLES HERE */
     * {
       margin: 0;
       padding: 0;
@@ -2006,18 +2006,25 @@
         openProductModal(id); 
       }
 
+      // FIXED: addToCart function now uses unique IDs properly
       function addToCart(productId) {
         const product = products.find((p, index) => (p._id == productId || p.id == productId || index == productId));
-        if (!product) return;
+        if (!product) {
+          console.error('Product not found:', productId);
+          return;
+        }
         
-        const existing = cart.find(item => item.id == productId);
+        // Create a unique ID for cart item (use product index + timestamp if needed)
+        const cartItemId = product._id || product.id || `prod_${Date.now()}_${Math.random()}`;
+        
+        const existing = cart.find(item => item.id === cartItemId);
         if (existing) {
           existing.quantity += 1;
         } else {
           const pkrPrice = product.pkrPrice || (product.price * USD_TO_PKR);
           cart.push({ 
             ...product, 
-            id: productId,
+            id: cartItemId,
             pkrPrice: pkrPrice,
             quantity: 1,
             imageFile: product.imageFile || `${product.imageId || 1}.png`
@@ -2362,59 +2369,63 @@
         
         step4GrandTotal.textContent = `Total: ${formatPKR(orderData.total)}`;
       }
-async function placeOrder() {
-  if (!authToken) {
-    alert('Please login to place order');
-    showAuthModal();
-    return;
-  }
-  
-  // Collect address data
-  const address = {
-    name: document.getElementById('addr-name').value || 'Customer',
-    street: document.getElementById('addr-line').value || 'Address not provided',
-    city: document.getElementById('addr-city').value || 'City not provided',
-    state: document.getElementById('addr-state').value || 'State not provided',
-    zipCode: document.getElementById('addr-zip').value || '00000',
-    country: document.getElementById('addr-country').value || 'Pakistan',
-    phone: document.getElementById('addr-phone').value || 'Not provided'
-  };
-  
-  const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'cash_on_delivery';
-  
-  // IMPORTANT: Use the REAL MongoDB _id from cart items
-  const items = cart.map(item => ({
-    productId: item.id, // This should be the MongoDB _id
-    quantity: item.quantity,
-    price: item.price || (item.pkrPrice / USD_TO_PKR)
-  }));
-  
-  console.log('Cart items with real IDs:', items); // Debug log
-  
-  const orderPayload = {
-    items: items,
-    shippingAddress: address,
-    paymentMethod: paymentMethod,
-    subtotal: orderData.subtotal / USD_TO_PKR,
-    shippingCost: orderData.shipping / USD_TO_PKR,
-    tax: orderData.tax / USD_TO_PKR,
-    total: orderData.total / USD_TO_PKR
-  };
-  
-  try {
-    const result = await apiCall('/orders', 'POST', orderPayload, true);
-    if (result) {
-      document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
-      orderCompleteMessage.style.display = 'block';
-      cart = [];
-      saveCart();
-    }
-  } catch (error) {
-    alert('Failed to place order: ' + error.message);
-  }
 
-
-     
+      // FIXED: placeOrder function with better ID handling
+      async function placeOrder() {
+        if (!authToken) {
+          alert('Please login to place order');
+          showAuthModal();
+          return;
+        }
+        
+        if (cart.length === 0) {
+          alert('Your cart is empty');
+          return;
+        }
+        
+        // Collect address data
+        const address = {
+          name: document.getElementById('addr-name').value || 'Customer',
+          street: document.getElementById('addr-line').value || 'Address not provided',
+          city: document.getElementById('addr-city').value || 'City not provided',
+          state: document.getElementById('addr-state').value || 'State not provided',
+          zipCode: document.getElementById('addr-zip').value || '00000',
+          country: document.getElementById('addr-country').value || 'Pakistan',
+          phone: document.getElementById('addr-phone').value || 'Not provided'
+        };
+        
+        const paymentMethod = document.querySelector('input[name="paymentMethod"]:checked')?.value || 'cash_on_delivery';
+        
+        // Use product's original ID or imageId as fallback
+        const items = cart.map(item => ({
+          productId: item.imageId || item.id, // Use imageId if available, otherwise use the cart id
+          quantity: item.quantity,
+          price: item.price || (item.pkrPrice / USD_TO_PKR)
+        }));
+        
+        console.log('Sending order items:', items);
+        
+        const orderPayload = {
+          items: items,
+          shippingAddress: address,
+          paymentMethod: paymentMethod,
+          subtotal: orderData.subtotal / USD_TO_PKR,
+          shippingCost: orderData.shipping / USD_TO_PKR,
+          tax: orderData.tax / USD_TO_PKR,
+          total: orderData.total / USD_TO_PKR
+        };
+        
+        try {
+          const result = await apiCall('/orders', 'POST', orderPayload, true);
+          if (result) {
+            document.querySelectorAll('.step-panel').forEach(p => p.classList.remove('active'));
+            orderCompleteMessage.style.display = 'block';
+            cart = [];
+            saveCart();
+          }
+        } catch (error) {
+          alert('Failed to place order: ' + error.message);
+        }
       }
 
       // Order confirmation event listeners
@@ -2719,7 +2730,18 @@ async function placeOrder() {
         }
       }
 
+      // Clear any invalid cart items on load
+      function validateCart() {
+        const validCart = cart.filter(item => item.id && item.id !== 0 && item.id !== '0');
+        if (validCart.length !== cart.length) {
+          cart = validCart;
+          saveCart();
+          console.log('Cleaned invalid cart items');
+        }
+      }
+
       // Initialize
+      validateCart();
       renderCartSidebar();
       updateCartCount();
       loadProducts();
