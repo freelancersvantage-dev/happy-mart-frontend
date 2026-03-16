@@ -2395,10 +2395,10 @@ async function placeOrder() {
     items: items,
     shippingAddress: address,
     paymentMethod: paymentMethod,
-    subtotal: orderData.subtotal / PKR,
-    shippingCost: orderData.shipping / PKR,
-    tax: orderData.tax / PKR,
-    total: orderData.total / PKR
+    subtotal: orderData.subtotal / USD_TO_PKR,
+    shippingCost: orderData.shipping / USD_TO_PKR,
+    tax: orderData.tax / USD_TO_PKR,
+    total: orderData.total / USD_TO_PKR
   };
   
   try {
