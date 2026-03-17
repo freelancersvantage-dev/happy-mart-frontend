@@ -100,11 +100,13 @@
       font-size: 1.2rem;
       color: var(--dark);
       display: inline-block;
+      margin-left: 0.25rem;
     }
     
     @media (min-width: 768px) {
       .logo-text {
         font-size: 1.8rem;
+        margin-left: 0.5rem;
       }
     }
     
@@ -519,6 +521,64 @@
       border: 1px solid var(--border); 
     }
 
+    /* Modal Styles with Close Button */
+    .product-modal {
+      position: fixed; 
+      top: 0; 
+      left: 0; 
+      width: 100%; 
+      height: 100%; 
+      background: rgba(0,0,0,0.5);
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      z-index: 3000;
+      visibility: hidden; 
+      opacity: 0; 
+      padding: 1rem;
+      transition: opacity 0.3s ease;
+    }
+    
+    .product-modal.open { 
+      visibility: visible; 
+      opacity: 1; 
+    }
+    
+    .modal-detail-content {
+      background: white; 
+      width: 100%; 
+      max-width: 500px; 
+      border-radius: 1rem; 
+      padding: 1.5rem; 
+      max-height: 85vh; 
+      overflow-y: auto;
+      position: relative;
+    }
+    
+    .modal-close-btn {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--gray);
+      width: 2rem;
+      height: 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: all 0.2s;
+      z-index: 10;
+    }
+    
+    .modal-close-btn:hover {
+      background: #fee2e2;
+      color: var(--danger);
+    }
+
     /* Footer */
     .footer { 
       margin-top: 2rem; 
@@ -615,38 +675,6 @@
       margin-bottom: 0.5rem;
     }
 
-    /* Modal */
-    .product-modal {
-      position: fixed; 
-      top: 0; 
-      left: 0; 
-      width: 100%; 
-      height: 100%; 
-      background: rgba(0,0,0,0.5);
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      z-index: 3000;
-      visibility: hidden; 
-      opacity: 0; 
-      padding: 1rem;
-    }
-    
-    .product-modal.open { 
-      visibility: visible; 
-      opacity: 1; 
-    }
-    
-    .modal-detail-content {
-      background: white; 
-      width: 100%; 
-      max-width: 500px; 
-      border-radius: 1rem; 
-      padding: 1.5rem; 
-      max-height: 85vh; 
-      overflow-y: auto;
-    }
-
     /* Order Confirmation */
     .order-confirm-container {
       max-width: 1000px;
@@ -740,12 +768,12 @@
 </head>
 <body>
   <div class="container">
-    <!-- Header -->
+    <!-- Header with Logo and Text -->
     <header>
       <div class="header-container">
         <div class="logo">
-          <img src="12.png" alt="HAPPY MART" class="logo-image" onerror="this.style.display='none'; this.nextElementSibling.style.display='inline-block';">
-          <span class="logo-text" style="display:none;">HAPPY MART</span>
+          <img src="12.png" alt="HAPPY MART" class="logo-image" onerror="this.style.display='none';">
+          <span class="logo-text">HAPPY MART</span>
         </div>
         
         <input type="checkbox" id="menu-toggle" class="menu-toggle">
@@ -802,7 +830,7 @@
       <div class="products-grid" id="shop-grid"></div>
     </section>
 
-    <!-- ABOUT PAGE (simplified) -->
+    <!-- ABOUT PAGE -->
     <section id="about-page" class="page">
       <div class="about-content" style="padding:2rem; background:white; border-radius:1rem;">
         <h2 style="margin-bottom:1rem;">Our Story</h2>
@@ -810,7 +838,7 @@
       </div>
     </section>
 
-    <!-- CONTACT PAGE (simplified) -->
+    <!-- CONTACT PAGE -->
     <section id="contact-page" class="page">
       <div class="contact-content" style="padding:2rem; background:white; border-radius:1rem;">
         <h2 style="margin-bottom:1rem;">Contact Us</h2>
@@ -906,14 +934,17 @@
     </div>
   </div>
 
-  <!-- Product Modal -->
+  <!-- Product Modal with Close Button -->
   <div class="product-modal" id="product-modal">
-    <div class="modal-detail-content" id="product-detail-content"></div>
+    <div class="modal-detail-content" id="product-detail-content">
+      <!-- Content will be dynamically inserted here -->
+    </div>
   </div>
 
   <!-- Auth Modal -->
   <div class="product-modal" id="auth-modal">
     <div class="modal-detail-content">
+      <button class="modal-close-btn" id="close-auth-btn">&times;</button>
       <h2 style="margin-bottom:1rem;">Login / Register</h2>
       <input type="email" id="login-email" placeholder="Email" class="full-width" style="margin-bottom:0.5rem; padding:0.7rem;">
       <input type="password" id="login-password" placeholder="Password" class="full-width" style="margin-bottom:0.5rem; padding:0.7rem;">
@@ -1168,7 +1199,8 @@
         if (!product) return;
         
         productDetailDiv.innerHTML = `
-          <h2 style="margin-bottom:0.5rem;">${product.name}</h2>
+          <button class="modal-close-btn" id="close-product-modal-btn">&times;</button>
+          <h2 style="margin-bottom:0.5rem; padding-right:2rem;">${product.name}</h2>
           <img src="${product.imageFile}" style="width:100%; max-height:200px; object-fit:contain; margin-bottom:1rem;">
           <p class="product-price" style="font-size:1.5rem;">${formatPKR(product.pkrPrice || (product.price * USD_TO_PKR))}</p>
           <p style="margin-bottom:0.5rem;">${product.description}</p>
@@ -1178,6 +1210,11 @@
         `;
         
         productModal.classList.add('open');
+        
+        document.getElementById('close-product-modal-btn').onclick = () => {
+          productModal.classList.remove('open');
+        };
+        
         document.getElementById('modal-add-to-cart').onclick = () => {
           addToCart(id);
           productModal.classList.remove('open');
@@ -1263,6 +1300,7 @@
       step4Back?.addEventListener('click', () => { currentStep = 3; updateStepDisplay(); });
       
       document.getElementById('close-auth')?.addEventListener('click', () => authModal.classList.remove('open'));
+      document.getElementById('close-auth-btn')?.addEventListener('click', () => authModal.classList.remove('open'));
       document.getElementById('close-product-modal')?.addEventListener('click', () => productModal.classList.remove('open'));
       
       cartIconBtn?.addEventListener('click', (e) => {
